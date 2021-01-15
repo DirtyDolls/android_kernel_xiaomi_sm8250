@@ -716,7 +716,6 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 
-
 ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
 KBUILD_CFLAGS	+= -O3	-mcpu=cortex-a77+crc+crypto -mtune=cortex-a77 \
 			-march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod+fp16 \
@@ -731,11 +730,12 @@ KBUILD_CFLAGS	+= -mllvm -import-instr-limit=15
 
 ifdef CONFIG_INLINE_OPTIMIZATION
 ifdef CONFIG_CC_IS_CLANG
-KBUILD_CFLAGS	+= -mllvm -inline-threshold=600
-KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=750
+KBUILD_CFLAGS	+= -mllvm -inline-threshold=2000
+KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=3000
+KBUILD_CFLAGS	+= -mllvm -unroll-threshold=1200
 else ifdef CONFIG_CC_IS_GCC
-KBUILD_CFLAGS	+= --param max-inline-insns-single=600
-KBUILD_CFLAGS	+= --param max-inline-insns-auto=750
+KBUILD_CFLAGS	+= --param max-inline-insns-single=2000
+KBUILD_CFLAGS	+= --param max-inline-insns-auto=3000
 
 # We limit inlining to 5KB on the stack.
 KBUILD_CFLAGS	+= --param large-stack-frame=12288
