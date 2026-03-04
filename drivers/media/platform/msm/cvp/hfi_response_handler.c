@@ -515,9 +515,8 @@ static int hfi_process_session_cvp_msg(u32 device_id,
 				__dme_output_cache_operation(pkt);
 
 			msm_cvp_unmap_buf_cpu(inst, ktid);
-
-			rc = _deprecated_hfi_msg_process(device_id, pkt, info,
-							 inst);
+			 rc = _deprecated_hfi_msg_process(device_id,
+				pkt, info, inst);
 			cvp_put_inst(inst);
 			return rc;
 		}
