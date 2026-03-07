@@ -718,14 +718,32 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
-KBUILD_CFLAGS   += -O3 -mcpu=cortex-a77+crc+crypto -mtune=cortex-a77 \
-                   -march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod+fp16 \
-                   -fno-trapping-math -fno-math-errno -funroll-loops \
-                   -mllvm -polly
-KBUILD_AFLAGS   += -O3 -mcpu=cortex-a77+crc+crypto \
-                   -march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod+fp16 \
-                   -funroll-loops
-KBUILD_LDFLAGS  += -O3 -Bsymbolic-functions --as-needed -mllvm -polly
+KBUILD_CFLAGS	+= -O3	-mcpu=cortex-a77+crc+crypto -mtune=cortex-a77 \
+			-march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod+fp16 \
+			-fno-trapping-math -fno-math-errno -funroll-loops \
+			-mllvm -polly
+KBUILD_AFLAGS	+= -O3	-mcpu=cortex-a77+crc+crypto \
+			-march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod+fp16 \
+			-funroll-loops
+
+KBUILD_LDFLAGS	+= -O3 -Bsymbolic-functions --as-needed -mllvm -polly
+KBUILD_CFLAGS	+= -mllvm -import-instr-limit=15
+
+ifdef CONFIG_INLINE_OPTIMIZATION
+ifdef CONFIG_CC_IS_CLANG
+KBUILD_CFLAGS	+= -mllvm -inline-threshold=600
+KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=750
+else ifdef CONFIG_CC_IS_GCC
+KBUILD_CFLAGS	+= --param max-inline-insns-single=600
+KBUILD_CFLAGS	+= --param max-inline-insns-auto=750
+
+# We limit inlining to 5KB on the stack.
+KBUILD_CFLAGS	+= --param large-stack-frame=12288
+
+KBUILD_CFLAGS	+= --param inline-min-speedup=5
+KBUILD_CFLAGS	+= --param inline-unit-growth=60
+endif
+endif
 endif
 
 ifdef CONFIG_CC_WERROR
@@ -753,20 +771,20 @@ endif
 
 ifdef CONFIG_LLVM_POLLY
 KBUILD_CFLAGS	+= -mllvm -polly \
-		   -mllvm -polly-run-inliner \
-		   -mllvm -polly-ast-use-context \
-		   -mllvm -polly-detect-keep-going \
-		   -mllvm -polly-invariant-load-hoisting \
-		   -mllvm -polly-vectorizer=stripmine
+		-mllvm -polly-run-inliner \
+		-mllvm -polly-ast-use-context \
+		-mllvm -polly-detect-keep-going \
+		-mllvm -polly-invariant-load-hoisting \
+		-mllvm -polly-vectorizer=stripmine
 
 ifeq ($(shell test $(CONFIG_CLANG_VERSION) -gt 130000; echo $$?),0)
 KBUILD_CFLAGS	+= -mllvm -polly-loopfusion-greedy=1 \
-		   -mllvm -polly-reschedule=1 \
-		   -mllvm -polly-postopts=1 \
-		   -mllvm -polly-num-threads=0 \
-		   -mllvm -polly-omp-backend=LLVM \
-		   -mllvm -polly-scheduling=dynamic \
-		   -mllvm -polly-scheduling-chunksize=1
+		-mllvm -polly-reschedule=1 \
+		-mllvm -polly-postopts=1 \
+		-mllvm -polly-num-threads=0 \
+		-mllvm -polly-omp-backend=LLVM \
+		-mllvm -polly-scheduling=dynamic \
+			-mllvm -polly-scheduling-chunksize=1
 else
 KBUILD_CFLAGS	+= -mllvm -polly-opt-fusion=max
 endif
