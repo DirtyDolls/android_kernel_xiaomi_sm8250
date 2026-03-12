@@ -1,0 +1,73 @@
+name: Build Kernel Alioth 
+
+on:
+  push:
+    branches:
+      - aosp-16
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          ref: aosp-16      
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup Build Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc build-essential flex bison lld llvm clang libssl-dev libelf-dev wget tar curl zip
+
+      - name: Download Clang r574158
+        run: |
+          mkdir clang
+          curl -LSs https://github.com/moonooen/AOSP20/releases/download/v1.0/clang-r547379-qssi.tar.gz -o clang.tar.gz
+          tar -xzf clang.tar.gz -C clang/
+
+      - name: Start Build Kernel
+        run: |
+          export PATH=$(pwd)/clang/bin:$PATH
+          # BUAT FOLDER Out
+          mkdir -p out
+          
+          KFLAGS="-Wno-error -Wno-implicit-function-declaration -Wno-int-conversion -Wno-incompatible-function-pointer-types -Wno-unused-but-set-variable"
+          
+          # Gunakan defconfig dari vendor (prioritas Alioth)
+          make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- KCFLAGS="$KFLAGS" vendor/alioth_defconfig
+          
+          # Kompilasi
+          make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- KCFLAGS="$KFLAGS" 2>&1 | tee out/build.log
+
+      - name: Setup AnyKernel3
+        if: always() # Ubah dari success() ke always() agar tetap jalan
+        run: |
+          git clone https://github.com/DirtyDolls/AnyKernel3.git AnyKernel
+          
+          # Gunakan perintah cp yang lebih 'bandel'
+          cp out/arch/arm64/boot/Image AnyKernel/ 2>/dev/null || true
+          cp out/arch/arm64/boot/dtbo.img AnyKernel/ 2>/dev/null || true
+          cp out/arch/arm64/boot/dtb.img AnyKernel/dtb 2>/dev/null || true
+          # Ambil file .config yang sebenarnya dipakai saat build
+          cp out/.config out/build_config.txt
+          cd AnyKernel
+          zip -r9 ../ZiggotZ-Kernel.zip * -x .git README.md
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Output-Alioth
+          path: |
+            ZiggotZ-Kernel.zip
+            out/build.log
+            out/build_config.txt
+
+
+
