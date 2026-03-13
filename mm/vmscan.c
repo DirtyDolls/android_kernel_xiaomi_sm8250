@@ -108,15 +108,6 @@ struct scan_control {
 	/* One of the zones is ready for compaction */
 	unsigned int compaction_ready:1;
 
-	/* The anonymous pages on the current node are below vm.anon_min_kbytes */
-	unsigned int anon_below_min:1;
-
-	/* The clean file pages on the current node are below vm.clean_low_kbytes */
-	unsigned int clean_below_low:1;
-
-	/* The clean file pages on the current node are below vm.clean_min_kbytes */
-	unsigned int clean_below_min:1;
-
 #ifdef CONFIG_LRU_GEN
 	/* help make better choices when multiple memcgs are available */
 	unsigned int memcgs_need_aging:1;
@@ -202,10 +193,6 @@ int kswapd_threads_current = DEF_KSWAPD_THREADS_PER_NODE;
 #else
 #define prefetchw_prev_lru_page(_page, _base, _field) do { } while (0)
 #endif
-
-unsigned long sysctl_anon_min_kbytes __read_mostly = CONFIG_ANON_MIN_KBYTES;
-unsigned long sysctl_clean_low_kbytes __read_mostly = CONFIG_CLEAN_LOW_KBYTES;
-unsigned long sysctl_clean_min_kbytes __read_mostly = CONFIG_CLEAN_MIN_KBYTES;
 
 unsigned long sysctl_anon_min_kbytes __read_mostly = CONFIG_ANON_MIN_KBYTES;
 unsigned long sysctl_clean_low_kbytes __read_mostly = CONFIG_CLEAN_LOW_KBYTES;
